@@ -1,0 +1,507 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>WWcoin — Clicker with TON Withdraw & PayPal</title>
+
+    <script src='//libtl.com/sdk.js' data-zone='10286020' data-sdk='show_10286020'></script>
+    <script src="https://unpkg.com/@tonconnect/sdk@latest/dist/tonconnect.umd.js"></script>
+    <script src="https://unpkg.com/@tonconnect/ui@latest/dist/tonconnect-ui.min.js"></script>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #fde68a 0%, #fff4d6 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 0;
+            padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+        }
+
+        .card {
+            width: 100%;
+            max-width: 100%;
+            height: 100vh;
+            height: 100dvh;
+            background: #ffffff;
+            border-radius: 0;
+            padding: 10px;
+            box-shadow: none;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        @media (min-width: 481px) {
+            body {
+                padding: 12px;
+            }
+
+            .card {
+                max-width: 440px;
+                height: auto;
+                min-height: 85vh;
+                border-radius: 24px;
+                padding: 24px;
+                box-shadow: 0 20px 60px rgba(253, 230, 138, 0.3), 0 8px 16px rgba(0, 0, 0, 0.08);
+            }
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #fef3c7;
+            flex-shrink: 0;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .grid {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-overflow-scrolling: touch;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .play {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%);
+        }
+
+        .big-btn {
+            border: none;
+            border-radius: 50%;
+            padding: 0;
+            width: 120px; /* Increased from 90px to 120px for better visibility */
+            height: 120px; /* Increased from 90px to 120px for better visibility */
+            font-size: 56px; /* Increased from 42px to 56px for better visibility */
+            cursor: pointer;
+            background: linear-gradient(135deg, #fde68a 0%, #fff4d6 100%);
+            box-shadow: 0 8px 24px rgba(253, 230, 138, 0.4),
+                        0 4px 8px rgba(0, 0, 0, 0.1),
+                        inset 0 -4px 12px rgba(217, 119, 6, 0.15);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        .big-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 32px rgba(253, 230, 138, 0.5),
+                        0 6px 12px rgba(0, 0, 0, 0.15);
+        }
+
+        .big-btn:active {
+            transform: translateY(-2px) scale(0.98);
+        }
+
+        .stats {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .energy {
+            width: 100%;
+            max-width: 420px;
+        }
+
+        .bar {
+            height: 10px;
+            background: rgba(253, 230, 138, 0.3);
+            border-radius: 999px;
+            overflow: hidden;
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .bar > i {
+            display: block;
+            height: 100%;
+            background: linear-gradient(90deg, #fbbf24, #f59e0b);
+            transition: width 0.3s ease;
+            border-radius: 999px;
+        }
+
+        button.small {
+            padding: 12px 16px; /* Increased from 8px 12px to 12px 16px for larger tap targets */
+            border-radius: 20px; /* Increased from 16px to 20px */
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px; /* Increased from 12px to 14px for better readability */
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+            -webkit-tap-highlight-color: transparent;
+            touch-action: manipulation;
+        }
+
+        button.small:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+        }
+
+        button.small:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        button.small:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: #ffffff;
+        }
+
+        .muted {
+            color: #9ca3af;
+            font-size: 11px;
+            font-weight: 500;
+        }
+
+        .ad-buttons {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .ad-buttons button {
+            background: linear-gradient(135deg, #fff4d6, #fde68a);
+            color: #92400e;
+            border-radius: 20px;
+            padding: 10px 14px; /* Increased from 6px 10px to 10px 14px */
+            font-size: 13px; /* Increased from 11px to 13px */
+        }
+
+        .shop {
+            padding: 12px;
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 4px 16px rgba(253, 230, 138, 0.2);
+        }
+
+        .withdraw {
+            margin-top: 8px;
+            border-top: 2px dashed #fef3c7;
+            padding-top: 8px;
+        }
+
+        .select, .withdraw input {
+            width: 100%;
+            box-sizing: border-box;
+            padding: 14px 16px; /* Increased from 10px 12px to 14px 16px */
+            border-radius: 16px;
+            border: 2px solid #fef3c7;
+            margin-bottom: 8px;
+            font-size: 15px; /* Increased from 13px to 15px */
+            background: #fffbeb;
+            transition: all 0.2s ease;
+        }
+
+        .select:focus, .withdraw input:focus {
+            outline: none;
+            border-color: #fbbf24;
+            box-shadow: 0 0 0 3px rgba(251, 191, 36, 0.1);
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        .footer {
+            margin-top: 16px;
+            text-align: center;
+            color: #9ca3af;
+            font-size: 13px;
+        }
+
+        h3, h4 {
+            margin-top: 0;
+            margin-bottom: 8px;
+            color: #92400e;
+            font-weight: 700;
+            font-size: 15px;
+        }
+
+        .level-badge {
+            background: linear-gradient(135deg, #fbbf24, #f59e0b);
+            color: white;
+            padding: 4px 10px;
+            border-radius: 16px;
+            font-weight: 700;
+            font-size: 14px;
+            box-shadow: 0 2px 8px rgba(251, 191, 36, 0.3);
+        }
+
+        #walletAddress {
+            margin-top: 6px;
+            padding: 6px 10px;
+            background: rgba(254, 243, 199, 0.5);
+            border-radius: 12px;
+            font-size: 10px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <div class="header">
+        <div>
+            <h1>WWcoin</h1>
+            <div class="muted">Convert Coin to "TON"</div>
+        </div>
+        <div style="text-align:right">
+            <div class="muted">Level</div>
+            <div id="level" class="level-badge">1</div>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- Click Screen -->
+        <div id="clickScreen" class="play">
+            <div class="stats" style="width:100%">
+                <div class="muted">Coins</div>
+                <div id="coins" style="font-size:20px;font-weight:800;background:linear-gradient(135deg,#f59e0b,#d97706);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;">0</div>
+            </div>
+
+            <button id="tapBtn" class="big-btn">🪙</button>
+
+            <div style="width:100%;margin-top:12px;display:flex;flex-direction:column;align-items:center">
+                <div class="energy">
+                    <div style="display:flex;justify-content:space-between;font-size:12px;color:#92400e;margin-bottom:6px;font-weight:600">
+                        <span>Energy</span>
+                        <span id="energyText">10/10</span>
+                    </div>
+                    <div class="bar"><i id="energyBar" style="width:100%"></i></div>
+                    <div style="display:flex;gap:6px;margin-top:8px;justify-content:center">
+                        <button id="refillBtn" class="small btn-primary">Refill</button>
+                        <button id="boostBtn" class="small btn-primary">Boost</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="connectWalletBtn" style="margin-top:10px"></div>
+            <div id="walletAddress" class="muted">Wallet not connected</div>
+
+            <!-- Ad Rewards -->
+            <div style="margin-top:10px;width:100%">
+                <h4 style="text-align:center;margin:6px 0">Ad Rewards</h4>
+                <div class="ad-buttons">
+                    <button class="small" id="ad3">3 ads → 50</button>
+                    <button class="small" id="ad5">5 ads → 100</button>
+                    <button class="small" id="ad10">10 ads → 200</button>
+                </div>
+                <div id="adProgress" class="muted" style="margin-top:6px;text-align:center">Progress: —</div>
+            </div>
+
+            <div style="width:100%;display:flex;justify-content:center;margin-top:10px">
+                <button id="goWithdrawBtn" class="small btn-primary" style="padding:10px 24px">Go to Withdraw</button>
+            </div>
+        </div>
+
+        <!-- Withdraw Screen -->
+        <aside id="withdrawScreen" class="shop hidden">
+            <h3 style="margin-top:0;margin-bottom:8px">Withdraw / Convert to TON</h3>
+            <div class="withdraw">
+                <label for="convertSelect" class="muted" style="display:block;margin-bottom:6px">Choose package (coins → TON):</label>
+                <select id="convertSelect" class="select">
+                    <option value="50000">50,000 → 0.5 TON</option>
+                    <option value="90000">90,000 → 0.9 TON</option>
+                    <option value="100000">100,000 → 1.0 TON</option>
+                    <option value="300000">300,000 → 4.0 TON</option>
+                    <option value="500000">500,000 → 7.0 TON</option>
+                    <option value="900000">900,000 → 10.0 TON</option>
+                    <option value="1000000">1,000,000 → 15.0 TON</option>
+                    <option value="3000000">3,000,000 → 20.0 TON</option>
+                    <option value="5000000">5,000,000 → 31.0 TON</option>
+                </select>
+                <div id="selectedInfo" class="muted" style="margin-bottom:6px">Wallet must be connected to withdraw.</div>
+                <button id="withdrawBtn" class="small btn-primary" style="margin-top:6px" disabled>Withdraw TON</button>
+            </div>
+
+            <!-- PAYPAL CASHOUT -->
+            <div class="withdraw" style="margin-top:12px">
+                <h4>Cashout via PayPal</h4>
+                <input id="paypalEmail" class="select" type="email" placeholder="Enter your PayPal email" />
+                <button id="paypalCashoutBtn" class="small btn-primary" disabled>Cashout 30,000 coins → $1</button>
+                <div id="paypalStatus" class="muted" style="margin-top:6px"></div>
+            </div>
+
+            <div style="margin-top:12px; text-align:center">
+                <button id="backToClick" class="small btn-primary" style="padding:10px 24px">Back to Click Game</button>
+            </div>
+        </aside>
+    </div>
+</div>
+
+<script>
+    const OWNER_WALLET = "UQCw7qsZfDdBhFcJCZh8LzA85nVXcOK7UmquWiAbX3dZGlpZ";
+    const MANIFEST_URL = "https://vusals-hk.github.io/ClickGAME/tonconnect-manifest.json";
+
+    const state = {
+      coins: Number(localStorage.getItem('hk_coins'))||0,
+      tapPower: 1,
+      autoIncome: 0,
+      energy: 10,
+      maxEnergy: 10,
+      level: 1,
+      boostActive: false,
+      tonConnected:false,
+      tonAccount:null
+    };
+
+    const coinsEl=document.getElementById('coins');
+    const energyText=document.getElementById('energyText');
+    const energyBar=document.getElementById('energyBar');
+    const levelEl=document.getElementById('level');
+    const adProgressEl=document.getElementById('adProgress');
+    const walletAddressEl=document.getElementById('walletAddress');
+    const convertSelect=document.getElementById('convertSelect');
+    const withdrawBtn=document.getElementById('withdrawBtn');
+    const selectedInfo=document.getElementById('selectedInfo');
+    const clickScreen=document.getElementById('clickScreen');
+    const withdrawScreen=document.getElementById('withdrawScreen');
+    const goWithdrawBtn=document.getElementById('goWithdrawBtn');
+    const backToClick=document.getElementById('backToClick');
+
+    // Ad rewards
+    const adProgress={'50':0,'100':0,'200':0};
+    const adRequirements={'50':3,'100':5,'200':10};
+
+    function saveState(){localStorage.setItem('hk_coins',state.coins);}
+    function render(){
+      coinsEl.textContent=Math.floor(state.coins).toLocaleString();
+      energyText.textContent=`${Math.floor(state.energy)}/${state.maxEnergy}`;
+      energyBar.style.width=`${Math.min(1,state.energy/state.maxEnergy)*100}%`;
+      levelEl.textContent=state.level;
+      adProgressEl.textContent=`50:${adProgress['50']}/${adRequirements['50']} • 100:${adProgress['100']}/${adRequirements['100']} • 200:${adProgress['200']}/${adRequirements['200']}`;
+      updateWithdrawUI();
+      updatePaypalUI();
+    }
+
+    // Tap & Boost
+    function handleTap(){if(state.energy<=0){alert('No energy');return;} state.coins+=state.tapPower*(state.boostActive?2:1); state.energy=Math.max(0,state.energy-1); saveState(); render();}
+    function activateBoost(sec=20){if(state.boostActive)return;state.boostActive=true;render();setTimeout(()=>{state.boostActive=false;render();},sec*1000);}
+    setInterval(()=>{if(state.autoIncome>0)state.coins+=state.autoIncome;state.energy=Math.min(state.maxEnergy,state.energy+0.2);saveState();render();},1000);
+
+    // Ads
+    function showAd(){return new Promise(resolve=>{if(window.show_10286020 && typeof show_10286020==='function'){try{show_10286020().then(()=>resolve(true));}catch(e){resolve(false);}}else{const ok=confirm('Simulate ad?');setTimeout(()=>resolve(ok),500);}});}
+    async function watchAd(reward){const req=adRequirements[reward];const watched=await showAd();if(!watched)return;adProgress[reward]++;if(adProgress[reward]>=req){state.coins+=Number(reward);adProgress[reward]=0;alert(`${reward} coin qazandınız!`);}else alert(`Reklama baxıldı (${adProgress[reward]}/${req})`);saveState();render();}
+
+    // Withdraw UI
+    function updateWithdrawUI(){const needed=Number(convertSelect.value);withdrawBtn.disabled=!(state.tonConnected && state.coins>=needed);selectedInfo.textContent=`Selected: ${needed} coins → Wallet: ${state.tonConnected?state.tonAccount.address:'not connected'}`;}
+    convertSelect.addEventListener('change',updateWithdrawUI);
+    document.getElementById('tapBtn').addEventListener('click',handleTap);
+    document.getElementById('refillBtn').addEventListener('click',()=>{state.energy=state.maxEnergy;render();});
+    document.getElementById('boostBtn').addEventListener('click',()=>activateBoost(20));
+    document.getElementById('ad3').addEventListener('click',()=>watchAd('50'));
+    document.getElementById('ad5').addEventListener('click',()=>watchAd('100'));
+    document.getElementById('ad10').addEventListener('click',()=>watchAd('200'));
+    goWithdrawBtn.addEventListener('click',()=>{clickScreen.classList.add('hidden');withdrawScreen.classList.remove('hidden');});
+    backToClick.addEventListener('click',()=>{withdrawScreen.classList.add('hidden');clickScreen.classList.remove('hidden');});
+
+    // TON Connect
+    const ui=new TON_CONNECT_UI.TonConnectUI({manifestUrl:MANIFEST_URL,buttonRootId:'connectWalletBtn'});
+    ui.onStatusChange(wallet=>{if(wallet){state.tonConnected=true;state.tonAccount=wallet.account;walletAddressEl.textContent="Wallet: "+wallet.account.address;}else{state.tonConnected=false;state.tonAccount=null;walletAddressEl.textContent="Wallet not connected";}updateWithdrawUI();});
+
+    // TON Withdraw
+    withdrawBtn.addEventListener('click',async()=>{
+      const needed=Number(convertSelect.value);
+      if(state.coins<needed){alert('Not enough coins');return;}
+      if(!state.tonConnected){alert('Connect wallet');return;}
+      const amountNano=String(Math.round(0.1*1_000_000_000));
+      try{withdrawBtn.disabled=true;withdrawBtn.textContent='Waiting...';await ui.sendTransaction({validUntil:Math.floor(Date.now()/1000)+300,messages:[{address:OWNER_WALLET,amount:amountNano}]});state.coins-=needed;saveState();render();alert(`Success: ${needed} coins sent as TON.`);}catch(err){alert('Tx failed.');}finally{withdrawBtn.textContent='Withdraw TON';updateWithdrawUI();}});
+
+    // --- PAYPAL CASHOUT ---
+    const PAYPAL_COST = 50000;
+    const paypalBtn = document.getElementById('paypalCashoutBtn');
+    const paypalEmailInput = document.getElementById('paypalEmail');
+    const paypalStatus = document.getElementById('paypalStatus');
+    let paypalClaimed = localStorage.getItem('paypal_claimed') === 'yes';
+
+    function updatePaypalUI(){
+      if(paypalClaimed){
+        paypalBtn.disabled = true;
+        paypalBtn.textContent = "Already claimed";
+        paypalStatus.textContent = "You already received $1.99";
+        return;
+      }
+
+      if(state.coins >= PAYPAL_COST && paypalEmailInput.value.includes('@')){
+        paypalBtn.disabled = false;
+      }else{
+        paypalBtn.disabled = true;
+      }
+    }
+
+    paypalEmailInput.addEventListener('input', updatePaypalUI);
+
+    paypalBtn.addEventListener('click', ()=>{
+      if(state.coins < PAYPAL_COST){alert(`You need at least ${PAYPAL_COST} coins to cash out $1.99!`);return;}
+      const email = paypalEmailInput.value.trim();
+      if(!email){alert("Enter PayPal email");return;}
+      const confirmSend = confirm(`Send $1.99 MANUALLY to this PayPal email:\n\n${email}\n\nAfter sending, click OK`);
+      if(!confirmSend) return;
+
+      fetch("https://api.telegram.org/bot8447944744:AAHkD4lgqRbzHW7rYsBuw5g0qeow_ke43Wg/sendMessage", {
+        method: "POST",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+            chat_id: "6525150767",
+            text: `💸 PayPal Cashout Request\nEmail: ${email}\nCoins: ${PAYPAL_COST}\n$1`
+        })
+      });
+
+      state.coins = 0;
+      saveState();
+      paypalClaimed = true;
+      localStorage.setItem('paypal_claimed','yes');
+
+      paypalBtn.disabled = true;
+      paypalBtn.textContent = "Already claimed";
+      paypalStatus.textContent = "Waiting for manual PayPal transfer.";
+
+      render();
+      alert("Request saved. Please send $1.99 manually via PayPal.");
+    });
+
+    render();
+</script>
+
+</body>
+</html>
